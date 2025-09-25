@@ -227,13 +227,17 @@
 	      (seq-partition (kai/buffer-get-n-last-line 1) 2)
 	      0 4)))))
 
+(defun kai/serial-term-buffer-p ()
+  (if-let* ((proc (get-buffer-process (current-buffer))))
+      (eq (process-type proc) 'serial)
+    nil))
+
 (defun kai/send-file-over-serial-to-qnx (fname)
   "Send binary files over serial line to a QNX system.  Note that uudecode
 is needed on the QNX side.  Also this function shall be called from the
 serial-connection wich has the QNX shell open."
-  (interactive "fsource-file: " term-mode)
-  (if-let* ((proc (get-buffer-process (current-buffer)))
-	    (_isSerial (eq (process-type proc) 'serial)))
+  (interactive "fSelect file to send: " term-mode)
+  (if (kai/serial-term-buffer-p)
       (progn
 	(term-send-string nil "cat > /tmp/incoming-base64-data")
 	(term-send-input)
@@ -252,6 +256,36 @@ serial-connection wich has the QNX shell open."
 	(message "File was send to the /tmp/ directory of the serial device."))
     (message "This function is meant to be called from a serial-term buffer!")))
 
+(defun kai/list-serial-ports ()
+  "Returns a LIST of CONS of serial-ports and description."
+  (if (eq system-type 'windows-nt)
+      (with-temp-buffer
+	(call-process "mode" nil t)
+	(mapcan
+	 (lambda (l)
+	   (if (string-prefix-p "Status for device COM" l)
+	       (list (cons
+		      (format "\\\\.\\%s" (substring l 18 -1))
+		      (substring l 18 -1)))))
+	 (string-lines (buffer-string) t)))
+    (mapcan
+     (lambda (n)
+       (let ((tty  (format "/dev/ttyUSB%d" n)))
+	 (if (file-exists-p tty)
+	     (list (cons
+		    tty
+		    (format "%s — %s"
+			    (file-name-base tty)
+     			    (replace-regexp-in-string
+			     "_"
+			     " "
+			     (replace-regexp-in-string
+			      "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
+			      "\\2"
+			      (shell-command-to-string
+			       (format "udevadm info --name=%s" tty))))))))))
+     (number-sequence 0 10))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -267,7 +301,6 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
 
 (easy-menu-define kais-toolbox-menu nil "Kais Toolbox Menu"
   '("Kais-Toolbox"
-    ("Serial Terminal")
     ("Power Supply"
      :active (kai/powsup-get-dev)
      :label (if (kai/powsup-get-dev)
@@ -292,26 +325,24 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
      ["Exit EDL" kai/adp-exit-edl t])))
 
 ;;; Fill the "Serial Terminal" menu
-(mapcar
- (lambda (n)
-   (let ((tty (format "/dev/ttyUSB%d" n)))
-     (easy-menu-add-item
-      kais-toolbox-menu
-      '("Serial Terminal")
-      `[,tty
-	(kai/serial-term ,tty)
-	:label (format "%s — %s"
-		       (file-name-base ,tty)
-		       (replace-regexp-in-string
-			"_"
-			" "
-			(replace-regexp-in-string
-			 "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
-			 "\\2"
-			 (shell-command-to-string
-			  (format "udevadm info --name=%s" ,tty)))))
-	:visible (file-exists-p ,tty)])))
- (number-sequence 0 10))
+(defun kai/get-serial-menu ()
+  (easy-menu-create-menu
+   "Serial Term"
+   (append
+    '(["Send File..." kai/send-file-over-serial-to-qnx
+       :active (kai/serial-term-buffer-p)]
+      "--")
+    (mapcar
+     (lambda (tty)
+       `[,(car tty)
+	 (kai/serial-term ,(car tty))
+	 :label ,(cdr tty)])
+     (kai/list-serial-ports)))))
+
+(defun kai/update-menu ()
+  (easy-menu-add-item kais-toolbox-menu nil (kai/get-serial-menu)))
+
+(add-hook 'menu-bar-update-hook #'kai/update-menu)
 
 (keymap-set-after
   (lookup-key global-map [menu-bar])
