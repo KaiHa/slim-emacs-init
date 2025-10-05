@@ -217,10 +217,10 @@
   (kai/powsup-instruct "GETD")
   (with-timeout (0.5 "*timeout*")
     (with-current-buffer (get-buffer-create "*powsup replies*")
-      (while (not (and (string-match "INSTR: GETD"
-				     (kai/buffer-get-n-last-line 2))
-		       (string-match "OK$"
-				     (kai/buffer-get-n-last-line 1))))
+      (while (not (and (string-match-p "INSTR: GETD"
+				       (kai/buffer-get-n-last-line 2))
+		       (string-match-p "OK$"
+				       (kai/buffer-get-n-last-line 1))))
 	(sit-for 0.1))
       (apply #'format "ACT: %s.%sV %s.%sA"
 	     (seq-subseq
