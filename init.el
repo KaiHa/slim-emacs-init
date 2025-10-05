@@ -18,6 +18,7 @@
  '(custom-enabled-themes '(leuven))
  '(history-length 1000)
  '(icomplete-vertical-mode t)
+ '(indent-tabs-mode nil)
  '(indicate-buffer-boundaries 'left)
  '(org-babel-load-languages '((emacs-lisp . t) (R . t) (shell . t)))
  '(package-archive-priorities '(("gnu" . 9) ("nongnu" . 8) ("melpa-stable" . 7)))
