@@ -8,9 +8,9 @@
  '(calendar-intermonth-text
    '(propertize
      (format "%2d"
-	     (car
-	      (calendar-iso-from-absolute
-	       (calendar-absolute-from-gregorian (list month day year)))))
+             (car
+              (calendar-iso-from-absolute
+               (calendar-absolute-from-gregorian (list month day year)))))
      'font-lock-face 'font-lock-function-name-face))
  '(calendar-today-visible-hook '(calendar-mark-today))
  '(calendar-week-start-day 1)
@@ -114,14 +114,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun kai/serial-term (tty)
   (if-let* ((buf (get-buffer tty))
-	    (_proc (get-buffer-process buf)))
+            (_proc (get-buffer-process buf)))
       (pop-to-buffer buf)
     (serial-term tty 115200)))
 
 (defun kai/adp-instruct (instruction)
   (let ((tty "/dev/ttyACM0"))
     (unless (and (get-buffer tty)
-		 (get-buffer-process tty))
+                 (get-buffer-process tty))
       (serial-term tty 115200)
       (bury-buffer))
     (with-current-buffer tty
@@ -155,26 +155,26 @@
 
 (defun kai/powsup-get-dev ()
   (cl-flet ((powsupp (tty)
-	      (string-search "ID_VENDOR=Silicon_Labs"
-			     (shell-command-to-string
-			      (format "udevadm info --name=%s" tty)))))
+              (string-search "ID_VENDOR=Silicon_Labs"
+                             (shell-command-to-string
+                              (format "udevadm info --name=%s" tty)))))
     (seq-some (lambda (n)
-		(let ((tty (format "/dev/ttyUSB%d" n)))
-		  (if (powsupp tty)
-		      tty
-		    nil)))
-	      (number-sequence 0 10))))
+                (let ((tty (format "/dev/ttyUSB%d" n)))
+                  (if (powsupp tty)
+                      tty
+                    nil)))
+              (number-sequence 0 10))))
 
 (defun kai/powsup-add-process-filter (tty)
   (cl-flet ((filterfunc (proc s)
-	      (with-current-buffer (get-buffer-create "*powsup replies*")
-		(goto-char (point-max))
+              (with-current-buffer (get-buffer-create "*powsup replies*")
+                (goto-char (point-max))
                 (insert s)
-		(if (and (>= (point-max) 3)
-			 (string-equal
-			  (buffer-substring (- (point-max) 3) (point-max))
-			  "OK"))
-		    (insert "\n")))))
+                (if (and (>= (point-max) 3)
+                         (string-equal
+                          (buffer-substring (- (point-max) 3) (point-max))
+                          "OK"))
+                    (insert "\n")))))
     (add-function
      :before
      (process-filter (get-buffer-process tty)) #'filterfunc)))
@@ -182,7 +182,7 @@
 (defun kai/powsup-instruct (instruction)
   (let ((tty (kai/powsup-get-dev)))
     (unless (and (get-buffer tty)
-		 (get-buffer-process tty))
+                 (get-buffer-process tty))
       (serial-term tty 9600)
       (kai/powsup-add-process-filter tty)
       (bury-buffer))
@@ -211,7 +211,7 @@
     (goto-char (point-max))
     (forward-line (- 0 n))
     (buffer-substring-no-properties (line-beginning-position)
-				    (line-end-position))))
+                                    (line-end-position))))
 
 (defun kai/powsup-status ()
   (interactive)
@@ -219,14 +219,14 @@
   (with-timeout (0.5 "*timeout*")
     (with-current-buffer (get-buffer-create "*powsup replies*")
       (while (not (and (string-match-p "INSTR: GETD"
-				       (kai/buffer-get-n-last-line 2))
-		       (string-match-p "OK$"
-				       (kai/buffer-get-n-last-line 1))))
-	(sit-for 0.1))
+                                       (kai/buffer-get-n-last-line 2))
+                       (string-match-p "OK$"
+                                       (kai/buffer-get-n-last-line 1))))
+        (sit-for 0.1))
       (apply #'format "ACT: %s.%sV %s.%sA"
-	     (seq-subseq
-	      (seq-partition (kai/buffer-get-n-last-line 1) 2)
-	      0 4)))))
+             (seq-subseq
+              (seq-partition (kai/buffer-get-n-last-line 1) 2)
+              0 4)))))
 
 (defun kai/serial-term-buffer-p ()
   (if-let* ((proc (get-buffer-process (current-buffer))))
@@ -240,51 +240,51 @@ serial-connection wich has the QNX shell open."
   (interactive "fSelect file to send: " term-mode)
   (if (kai/serial-term-buffer-p)
       (progn
-	(term-send-string nil "cat > /tmp/incoming-base64-data")
-	(term-send-input)
-	(term-send-string
-	 nil
-	 (with-temp-buffer
-	   (insert-file-contents fname)
-	   (base64-encode-region (point-min) (point-max))
-	   (buffer-string)))
-	(term-send-input)
-	(term-send-string
-	 nil
-	 (format "base64 -d /tmp/incoming-base64-data > /tmp/%s && rm /tmp/incoming-base64-data"
-		 (file-name-nondirectory fname)))
-	(term-send-input)
-	(message "File was send to the /tmp/ directory of the serial device."))
+        (term-send-string nil "cat > /tmp/incoming-base64-data")
+        (term-send-input)
+        (term-send-string
+         nil
+         (with-temp-buffer
+           (insert-file-contents fname)
+           (base64-encode-region (point-min) (point-max))
+           (buffer-string)))
+        (term-send-input)
+        (term-send-string
+         nil
+         (format "base64 -d /tmp/incoming-base64-data > /tmp/%s && rm /tmp/incoming-base64-data"
+                 (file-name-nondirectory fname)))
+        (term-send-input)
+        (message "File was send to the /tmp/ directory of the serial device."))
     (message "This function is meant to be called from a serial-term buffer!")))
 
 (defun kai/list-serial-ports ()
   "Returns a LIST of CONS of serial-ports and description."
   (if (eq system-type 'windows-nt)
       (with-temp-buffer
-	(call-process "mode" nil t)
-	(mapcan
-	 (lambda (l)
-	   (if (string-prefix-p "Status for device COM" l)
-	       (list (cons
-		      (format "\\\\.\\%s" (substring l 18 -1))
-		      (substring l 18 -1)))))
-	 (string-lines (buffer-string) t)))
+        (call-process "mode" nil t)
+        (mapcan
+         (lambda (l)
+           (if (string-prefix-p "Status for device COM" l)
+               (list (cons
+                      (format "\\\\.\\%s" (substring l 18 -1))
+                      (substring l 18 -1)))))
+         (string-lines (buffer-string) t)))
     (mapcan
      (lambda (n)
        (let ((tty  (format "/dev/ttyUSB%d" n)))
-	 (if (file-exists-p tty)
-	     (list (cons
-		    tty
-		    (format "%s — %s"
-			    (file-name-base tty)
-     			    (replace-regexp-in-string
-			     "_"
-			     " "
-			     (replace-regexp-in-string
-			      "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
-			      "\\2"
-			      (shell-command-to-string
-			       (format "udevadm info --name=%s" tty))))))))))
+         (if (file-exists-p tty)
+             (list (cons
+                    tty
+                    (format "%s — %s"
+                            (file-name-base tty)
+                            (replace-regexp-in-string
+                             "_"
+                             " "
+                             (replace-regexp-in-string
+                              "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
+                              "\\2"
+                              (shell-command-to-string
+                               (format "udevadm info --name=%s" tty))))))))))
      (number-sequence 0 10))))
 
 
@@ -305,8 +305,8 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
     ("Power Supply"
      :active (kai/powsup-get-dev)
      :label (if (kai/powsup-get-dev)
-		(format "Power Supply (%s)" (file-name-base (kai/powsup-get-dev)))
-	      "Power Supply")
+                (format "Power Supply (%s)" (file-name-base (kai/powsup-get-dev)))
+              "Power Supply")
      ["Status" nil
       :visible powsup-show-status
       :label (kai/powsup-status)
@@ -336,8 +336,8 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
     (mapcar
      (lambda (tty)
        `[,(car tty)
-	 (kai/serial-term ,(car tty))
-	 :label ,(cdr tty)])
+         (kai/serial-term ,(car tty))
+         :label ,(cdr tty)])
      (kai/list-serial-ports)))))
 
 (defun kai/update-menu ()
