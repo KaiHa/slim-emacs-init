@@ -118,40 +118,46 @@
       (pop-to-buffer buf)
     (serial-term tty 115200)))
 
-(defun kai/adp-instruct (instruction)
-  (let ((tty "/dev/ttyACM0"))
-    (unless (and (get-buffer tty)
-                 (get-buffer-process tty))
-      (serial-term tty 115200)
-      (bury-buffer))
-    (with-current-buffer tty
-      (term-send-string nil instruction)
-      (term-send-input))))
+(defun kai/adp-instruct (tty instruction)
+  "Send INSTRUCTION to device at TTY."
+  (unless (and (get-buffer tty)
+               (get-buffer-process tty))
+    (serial-term tty 115200)
+    (bury-buffer))
+  (with-current-buffer tty
+    (term-send-string nil instruction)
+    (term-send-input)))
 
-(defun kai/adp-enter-edl ()
-  (interactive)
-  (kai/adp-instruct "PWR_OFF 1")
-  (run-at-time 1 nil #'kai/adp-instruct "MD_EDL 1")
-  (run-at-time 2 nil #'kai/adp-instruct "PWR_OFF 0"))
+(defun kai/adp-enter-edl (tty)
+  "Enter Emergency Download Mode for device at TTY."
+  (interactive (list (read-file-name "TTY device: " "/dev/" "/dev/ttyACM0" t)))
+  (kai/adp-instruct tty "PWR_OFF 1")
+  (run-at-time 1 nil #'kai/adp-instruct tty "MD_EDL 1")
+  (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
 
-(defun kai/adp-exit-edl ()
-  (interactive)
-  (kai/adp-instruct "PWR_OFF 1")
-  (run-at-time 1 nil #'kai/adp-instruct "MD_EDL 0")
-  (run-at-time 2 nil #'kai/adp-instruct "PWR_OFF 0"))
+(defun kai/adp-exit-edl (tty)
+  "Exit Emergency Download Mode for device at TTY."
+  (interactive (list (read-file-name "TTY device: " "/dev/" "/dev/ttyACM0" t)))
+  (kai/adp-instruct tty "PWR_OFF 1")
+  (run-at-time 1 nil #'kai/adp-instruct tty "MD_EDL 0")
+  (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
 
-(defun kai/adp-pwr-on ()
-  (interactive)
-  (kai/adp-instruct "PWR_OFF 0"))
+(defun kai/adp-pwr-on (tty)
+  "Power on device at TTY."
+  (interactive (list (read-file-name "TTY device: " "/dev/" "/dev/ttyACM0" t)))
+  (kai/adp-instruct tty "PWR_OFF 0"))
 
-(defun kai/adp-pwr-off ()
-  (interactive)
-  (kai/adp-instruct "PWR_OFF 1"))
+(defun kai/adp-pwr-off (tty)
+  "Power off device at TTY."
+  (interactive (list (read-file-name "TTY device: " "/dev/" "/dev/ttyACM0" t)))
+  (kai/adp-instruct tty "PWR_OFF 1"))
 
-(defun kai/adp-reboot ()
-  (interactive)
-  (kai/adp-instruct "PWR_OFF 1")
-  (run-at-time 2 nil #'kai/adp-instruct "PWR_OFF 0"))
+(defun kai/adp-reboot (tty)
+  "Reboot device at TTY."
+  (interactive (list (read-file-name "TTY device: " "/dev/" "/dev/ttyACM0" t)))
+  (kai/adp-instruct tty "PWR_OFF 1")
+  (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
+
 
 (defun kai/powsup-get-dev ()
   (cl-flet ((powsupp (tty)
@@ -299,12 +305,12 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
   :group 'powsup)
 
 (easy-menu-define kais-toolbox-menu nil "Kais Toolbox Menu"
-  '("Kais-Toolbox"
+  `("Kais-Toolbox"
     ("Power Supply"
      :active (kai/powsup-get-dev)
-     :label (if (kai/powsup-get-dev)
-                (format "Power Supply (%s)" (file-name-base (kai/powsup-get-dev)))
-              "Power Supply")
+     :label ,(if (kai/powsup-get-dev)
+                 (format "Power Supply — %s" (file-name-base (kai/powsup-get-dev)))
+               "Power Supply")
      ["Status" nil
       :visible powsup-show-status
       :label (kai/powsup-status)
@@ -312,16 +318,22 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
      ["Power On" kai/powsup-on t]
      ["Power Off" kai/powsup-off t]
      ["Power-Cycle (off/on)" kai/powsup-powercycle t]
-     ["Show Status Message" (message "power supply - %s" (kai/powsup-status)) t])
-    ("ADP"
-     :active (file-exists-p "/dev/ttyACM0")
-     ["Power On" kai/adp-pwr-on t]
-     ["Power Off" kai/adp-pwr-off t]
-     ["Reboot" kai/adp-reboot t]
-     "--"
-     ["Emergency Download Mode (EDL)" nil nil]
-     ["Enter EDL" kai/adp-enter-edl t]
-     ["Exit EDL" kai/adp-exit-edl t])))
+     ["Show Status Message" (message "power supply - %s" (kai/powsup-status)) t])))
+
+(defun kai/get-adp-menu ()
+  "Generate menu items for all ADP devices."
+  (mapcar
+   (lambda (tty)
+     (easy-menu-create-menu
+      (format "ADP — %s" (file-name-base tty))
+      `(["Power On" (kai/adp-pwr-on ,tty) t]
+        ["Power Off" (kai/adp-pwr-off ,tty) t]
+        ["Reboot" (kai/adp-reboot ,tty) t]
+        "--"
+        ["Emergency Download Mode (EDL)" nil nil]
+        ["Enter EDL" (kai/adp-enter-edl ,tty) t]
+        ["Exit EDL" (kai/adp-exit-edl ,tty) t])))
+   (sort (directory-files "/dev" t "ttyACM[0-9]+") :lessp #'string-version-lessp)))
 
 ;;; Fill the "Serial Terminal" menu
 (defun kai/get-serial-menu ()
@@ -339,7 +351,8 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
      (kai/list-serial-ports)))))
 
 (defun kai/update-menu ()
-  (easy-menu-add-item kais-toolbox-menu nil (kai/get-serial-menu)))
+  (easy-menu-add-item kais-toolbox-menu nil (kai/get-serial-menu))
+  (mapcar (lambda (x) (easy-menu-add-item kais-toolbox-menu nil x)) (kai/get-adp-menu)))
 
 (add-hook 'menu-bar-update-hook #'kai/update-menu)
 
