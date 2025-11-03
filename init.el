@@ -159,17 +159,13 @@
   (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
 
 
-(defun kai/powsup-get-dev ()
+(defun kai/powsup-get-devs ()
+  "Find all Silicon Labs USB device in /dev."
   (cl-flet ((powsupp (tty)
               (string-search "ID_VENDOR=Silicon_Labs"
                              (shell-command-to-string
                               (format "udevadm info --name=%s" tty)))))
-    (seq-some (lambda (n)
-                (let ((tty (format "/dev/ttyUSB%d" n)))
-                  (if (powsupp tty)
-                      tty
-                    nil)))
-              (number-sequence 0 10))))
+    (seq-filter #'powsupp (directory-files "/dev" t "ttyUSB[0-9]+"))))
 
 (defun kai/powsup-add-process-filter (tty)
   (cl-flet ((filterfunc (proc s)
@@ -185,31 +181,37 @@
      :before
      (process-filter (get-buffer-process tty)) #'filterfunc)))
 
-(defun kai/powsup-instruct (instruction)
-  (let ((tty (kai/powsup-get-dev)))
-    (unless (and (get-buffer tty)
-                 (get-buffer-process tty))
-      (serial-term tty 9600)
-      (kai/powsup-add-process-filter tty)
-      (bury-buffer))
-    (with-current-buffer (get-buffer-create "*powsup replies*")
-      (goto-char (point-max))
-      (insert "INSTR: " instruction "\n"))
-    (with-current-buffer tty
-      (term-send-string nil (format "%s\r" instruction)))))
+(defun kai/powsup-instruct (tty instruction)
+  "Send INSTRUCTION to power supply at TTY."
+  (unless (and (get-buffer tty)
+               (get-buffer-process tty))
+    (serial-term tty 9600)
+    (kai/powsup-add-process-filter tty)
+    (bury-buffer))
+  (with-current-buffer (get-buffer-create "*powsup replies*")
+    (goto-char (point-max))
+    (insert "INSTR: " instruction "\n"))
+  (with-current-buffer tty
+    (term-send-string nil (format "%s\r" instruction))))
 
-(defun kai/powsup-on ()
-  (interactive)
-  (kai/powsup-instruct "SOUT0"))
+(defun kai/powsup-on (tty)
+  "Power on device at TTY."
+  (interactive
+   (list (read-file-name "Power Supply TTY: " "/dev/" (kai/powsup-get-devs))))
+  (kai/powsup-instruct tty "SOUT0"))
 
-(defun kai/powsup-off ()
-  (interactive)
-  (kai/powsup-instruct "SOUT1"))
+(defun kai/powsup-off (tty)
+  "Power off device at TTY."
+  (interactive
+   (list (read-file-name "Power Supply TTY: " "/dev/" (kai/powsup-get-devs))))
+  (kai/powsup-instruct tty "SOUT1"))
 
-(defun kai/powsup-powercycle ()
-  (interactive)
-  (kai/powsup-off)
-  (run-at-time 2 nil #'kai/powsup-on))
+(defun kai/powsup-powercycle (tty)
+  "Power cycle device at TTY."
+  (interactive
+   (list (read-file-name "Power Supply TTY: " "/dev/" (kai/powsup-get-devs))))
+  (kai/powsup-off tty)
+  (run-at-time 2 nil #'kai/powsup-on tty))
 
 (defun kai/buffer-get-n-last-line (n)
   "Return the N last line as a string."
@@ -219,9 +221,11 @@
     (buffer-substring-no-properties (line-beginning-position)
                                     (line-end-position))))
 
-(defun kai/powsup-status ()
-  (interactive)
-  (kai/powsup-instruct "GETD")
+(defun kai/powsup-status (tty)
+  "Get status of power supply at TTY."
+  (interactive
+   (list (read-file-name "Power Supply TTY: " "/dev/" "ttyUSB0")))
+  (kai/powsup-instruct tty "GETD")
   (with-timeout (0.5 "*timeout*")
     (with-current-buffer (get-buffer-create "*powsup replies*")
       (while (not (and (string-match-p "INSTR: GETD"
@@ -305,20 +309,23 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
   :group 'powsup)
 
 (easy-menu-define kais-toolbox-menu nil "Kais Toolbox Menu"
-  `("Kais-Toolbox"
-    ("Power Supply"
-     :active (kai/powsup-get-dev)
-     :label ,(if (kai/powsup-get-dev)
-                 (format "Power Supply — %s" (file-name-base (kai/powsup-get-dev)))
-               "Power Supply")
-     ["Status" nil
-      :visible powsup-show-status
-      :label (kai/powsup-status)
-      :active nil]
-     ["Power On" kai/powsup-on t]
-     ["Power Off" kai/powsup-off t]
-     ["Power-Cycle (off/on)" kai/powsup-powercycle t]
-     ["Show Status Message" (message "power supply - %s" (kai/powsup-status)) t])))
+  '("Kais-Toolbox"))
+
+(defun kai/get-powsup-menu ()
+  "Generate menu items for all power-supplies."
+  (mapcar
+   (lambda (tty)
+     (easy-menu-create-menu
+      (format "Power Supply — %s" (file-name-base tty))
+      `(["Status" nil
+         :visible powsup-show-status
+         :label (kai/powsup-status ,tty)
+         :active nil]
+        ["Power On" (kai/powsup-on ,tty) t]
+        ["Power Off" (kai/powsup-off ,tty) t]
+        ["Power-Cycle (off/on)" (kai/powsup-powercycle ,tty) t]
+        ["Show Status Message" (message "power supply - %s" (kai/powsup-status ,tty)) t])))
+   (kai/powsup-get-devs)))
 
 (defun kai/get-adp-menu ()
   "Generate menu items for all ADP devices."
@@ -352,7 +359,8 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
 
 (defun kai/update-menu ()
   (easy-menu-add-item kais-toolbox-menu nil (kai/get-serial-menu))
-  (mapcar (lambda (x) (easy-menu-add-item kais-toolbox-menu nil x)) (kai/get-adp-menu)))
+  (mapcar (lambda (x) (easy-menu-add-item kais-toolbox-menu nil x)) (kai/get-adp-menu))
+  (mapcar (lambda (x) (easy-menu-add-item kais-toolbox-menu nil x)) (kai/get-powsup-menu)))
 
 (add-hook 'menu-bar-update-hook #'kai/update-menu)
 
