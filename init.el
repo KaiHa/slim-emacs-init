@@ -176,7 +176,9 @@
               (string-search "ID_VENDOR=Silicon_Labs"
                              (shell-command-to-string
                               (format "udevadm info --name=%s" tty)))))
-    (seq-filter #'powsupp (directory-files "/dev" t "ttyUSB[0-9]+"))))
+    (sort
+     (seq-filter #'powsupp (directory-files "/dev" t "ttyUSB[0-9]+"))
+     :lessp #'string-version-lessp)))
 
 (defun kai/powsup-add-process-filter (tty)
   (cl-flet ((filterfunc (proc s)
