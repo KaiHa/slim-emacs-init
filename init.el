@@ -292,20 +292,20 @@ serial-connection wich has the QNX shell open."
                       (format "\\\\.\\%s" (substring l 18 -1))
                       (substring l 18 -1)))))
          (string-lines (buffer-string) t)))
-    (mapcan
+    (mapcar
      (lambda (tty)
-       (list (cons
-              tty
-              (format "%s — %s"
-                      (file-name-base tty)
-                      (replace-regexp-in-string
-                       "_"
-                       " "
-                       (replace-regexp-in-string
-                        "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
-                        "\\2"
-                        (shell-command-to-string
-                         (format "udevadm info --name=%s" tty))))))))
+       (cons
+        tty
+        (format "%s — %s"
+                (file-name-base tty)
+                (replace-regexp-in-string
+                 "_"
+                 " "
+                 (replace-regexp-in-string
+                  "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
+                  "\\2"
+                  (shell-command-to-string
+                   (format "udevadm info --name=%s" tty)))))))
      (sort (directory-files "/dev" t "ttyUSB[0-9]+") :lessp 'string-version-lessp))))
 
 
