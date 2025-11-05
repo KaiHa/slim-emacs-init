@@ -53,6 +53,12 @@
 (use-package cmake-mode
   :ensure t)
 
+(use-package company
+  :ensure t
+  :custom
+  (global-company-mode t)
+  (company-idle-delay 0.5))
+
 (use-package ibuffer :ensure nil
   :config
   (setq ibuffer-saved-filter-groups
