@@ -28,6 +28,8 @@
      ("melpa-stable" . "https://stable.melpa.org/packages/")))
  '(package-selected-packages nil)
  '(savehist-mode t)
+ '(tmm-completion-prompt nil)
+ '(tmm-shortcut-words nil)
  '(which-key-mode t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
