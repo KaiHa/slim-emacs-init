@@ -120,6 +120,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun kai/udevadm-info (tty)
+  (shell-command-to-string (format "udevadm info --name=%s" tty)))
+
 (defun kai/zip-both-ends (l)
   "Zip the head and the tail of the list L such that '(0 1 2 3 4 5 6) becomes '(0 6 1 5 2 4 3)."
   (when l
@@ -157,8 +160,7 @@
   "Find all ADP devices."
   (cl-flet ((predicate (tty)
               (string-search "ID_VENDOR=Microchip_Technology_Inc."
-                             (shell-command-to-string
-                              (format "udevadm info --name=%s" tty)))))
+                             (kai/udevadm-info tty))))
     (sort
      (seq-filter #'predicate (directory-files "/dev" t "ttyACM[0-9]+"))
      :lessp #'string-version-lessp)))
@@ -208,8 +210,7 @@
   "Find all Silicon Labs USB device in /dev."
   (cl-flet ((powsupp (tty)
               (string-search "ID_VENDOR=Silicon_Labs"
-                             (shell-command-to-string
-                              (format "udevadm info --name=%s" tty)))))
+                             (kai/udevadm-info tty))))
     (sort
      (seq-filter #'powsupp (directory-files "/dev" t "ttyUSB[0-9]+"))
      :lessp #'string-version-lessp)))
@@ -338,8 +339,7 @@ serial-connection wich has the QNX shell open."
                  (replace-regexp-in-string
                   "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
                   "\\2"
-                  (shell-command-to-string
-                   (format "udevadm info --name=%s" tty)))))))
+                  (kai/udevadm-info tty))))))
      (sort (directory-files "/dev" t "ttyUSB[0-9]+") :lessp 'string-version-lessp))))
 
 
