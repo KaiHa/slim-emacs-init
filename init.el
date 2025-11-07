@@ -123,6 +123,9 @@
 (defun kai/udevadm-info (tty)
   (shell-command-to-string (format "udevadm info --name=%s" tty)))
 
+(defun kai/read-tty-path (defaults)
+  (read-file-name "TTY device: " "/dev/" defaults t))
+
 (defun kai/zip-both-ends (l)
   "Zip the head and the tail of the list L such that '(0 1 2 3 4 5 6) becomes '(0 6 1 5 2 4 3)."
   (when l
@@ -177,31 +180,31 @@
 
 (defun kai/adp-enter-edl (tty)
   "Enter Emergency Download Mode for device at TTY."
-  (interactive (list (read-file-name "TTY device: " "/dev/" (kai/adp-get-devs) t)))
+  (interactive (list (kai/read-tty-path (kai/adp-get-devs))))
   (kai/adp-instruct tty "PWR_OFF 1")
   (run-at-time 1 nil #'kai/adp-instruct tty "MD_EDL 1")
   (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
 
 (defun kai/adp-exit-edl (tty)
   "Exit Emergency Download Mode for device at TTY."
-  (interactive (list (read-file-name "TTY device: " "/dev/" (kai/adp-get-devs) t)))
+  (interactive (list (kai/read-tty-path (kai/adp-get-devs))))
   (kai/adp-instruct tty "PWR_OFF 1")
   (run-at-time 1 nil #'kai/adp-instruct tty "MD_EDL 0")
   (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
 
 (defun kai/adp-pwr-on (tty)
   "Power on device at TTY."
-  (interactive (list (read-file-name "TTY device: " "/dev/" (kai/adp-get-devs) t)))
+  (interactive (list (kai/read-tty-path (kai/adp-get-devs))))
   (kai/adp-instruct tty "PWR_OFF 0"))
 
 (defun kai/adp-pwr-off (tty)
   "Power off device at TTY."
-  (interactive (list (read-file-name "TTY device: " "/dev/" (kai/adp-get-devs) t)))
+  (interactive (list (kai/read-tty-path (kai/adp-get-devs))))
   (kai/adp-instruct tty "PWR_OFF 1"))
 
 (defun kai/adp-reboot (tty)
   "Reboot device at TTY."
-  (interactive (list (read-file-name "TTY device: " "/dev/" (kai/adp-get-devs) t)))
+  (interactive (list (kai/read-tty-path (kai/adp-get-devs))))
   (kai/adp-instruct tty "PWR_OFF 1")
   (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
 
@@ -244,20 +247,17 @@
 
 (defun kai/powsup-on (tty)
   "Power on device at TTY."
-  (interactive
-   (list (read-file-name "Power Supply TTY: " "/dev/" (kai/powsup-get-devs))))
+  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
   (kai/powsup-instruct tty "SOUT0"))
 
 (defun kai/powsup-off (tty)
   "Power off device at TTY."
-  (interactive
-   (list (read-file-name "Power Supply TTY: " "/dev/" (kai/powsup-get-devs))))
+  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
   (kai/powsup-instruct tty "SOUT1"))
 
 (defun kai/powsup-powercycle (tty)
   "Power cycle device at TTY."
-  (interactive
-   (list (read-file-name "Power Supply TTY: " "/dev/" (kai/powsup-get-devs))))
+  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
   (kai/powsup-off tty)
   (run-at-time 2 nil #'kai/powsup-on tty))
 
