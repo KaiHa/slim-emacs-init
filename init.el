@@ -120,11 +120,37 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun kai/zip-both-ends (l)
+  "Zip the head and the tail of the list L such that '(0 1 2 3 4 5 6) becomes '(0 6 1 5 2 4 3)."
+  (when l
+    (cons (car l)
+          (kai/zip-both-ends (reverse (cdr l))))))
+
 (defun kai/serial-term (tty)
   (if-let* ((buf (get-buffer tty))
             (_proc (get-buffer-process buf)))
       (pop-to-buffer buf)
     (serial-term tty 115200)))
+
+
+(defun kai/serial-open-all ()
+  "Open all serial ports in a new frame."
+  (interactive)
+  (let* ((flist (append '((lambda () (select-frame (make-frame-command)))
+                          (lambda () (select-window (split-window-right))))
+                        (apply #'append
+                               (make-list
+                                7
+                                '((lambda () (other-window -1) (select-window (split-window-below)))
+                                  (lambda () (other-window 1) (split-window-below))))))))
+    (mapcar
+     (lambda (dev)
+       (apply (pop flist) nil)
+       (if-let* ((buf (get-buffer dev)))
+           (display-buffer-same-window buf nil)
+         (serial-term dev 115200))
+       (balance-windows))
+     (kai/zip-both-ends (mapcar #'car (kai/list-serial-ports))))))
 
 
 (defun kai/adp-get-devs ()
@@ -376,7 +402,9 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
        `[,(car tty)
          (kai/serial-term ,(car tty))
          :label ,(cdr tty)])
-     (kai/list-serial-ports)))))
+     (kai/list-serial-ports))
+    '(["Open all ttyUSBs" kai/serial-open-all
+       :active (kai/list-serial-ports)]))))
 
 (defun kai/update-menu ()
   (mapcar
