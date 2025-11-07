@@ -126,6 +126,14 @@
 (defun kai/read-tty-path (defaults)
   (read-file-name "TTY device: " "/dev/" defaults t))
 
+(defun kai/find-serial-devices (udev-search-string dev-pattern)
+  "Find all serial devices."
+  (cl-flet ((predicate (tty)
+              (string-search udev-search-string (kai/udevadm-info tty))))
+    (sort
+     (seq-filter #'predicate (directory-files "/dev" t dev-pattern))
+     :lessp #'string-version-lessp)))
+
 (defun kai/zip-both-ends (l)
   "Zip the head and the tail of the list L such that '(0 1 2 3 4 5 6) becomes '(0 6 1 5 2 4 3)."
   (when l
@@ -161,12 +169,7 @@
 
 (defun kai/adp-get-devs ()
   "Find all ADP devices."
-  (cl-flet ((predicate (tty)
-              (string-search "ID_VENDOR=Microchip_Technology_Inc."
-                             (kai/udevadm-info tty))))
-    (sort
-     (seq-filter #'predicate (directory-files "/dev" t "ttyACM[0-9]+"))
-     :lessp #'string-version-lessp)))
+  (kai/find-serial-devices "ID_VENDOR=Microchip_Technology_Inc." "ttyACM[0-9]+"))
 
 (defun kai/adp-instruct (tty instruction)
   "Send INSTRUCTION to device at TTY."
@@ -211,12 +214,7 @@
 
 (defun kai/powsup-get-devs ()
   "Find all Silicon Labs USB device in /dev."
-  (cl-flet ((powsupp (tty)
-              (string-search "ID_VENDOR=Silicon_Labs"
-                             (kai/udevadm-info tty))))
-    (sort
-     (seq-filter #'powsupp (directory-files "/dev" t "ttyUSB[0-9]+"))
-     :lessp #'string-version-lessp)))
+  (kai/find-serial-devices "ID_VENDOR=Silicon_Labs" "ttyUSB[0-9]+"))
 
 (defun kai/powsup-add-process-filter (tty)
   (cl-flet ((filterfunc (proc s)
