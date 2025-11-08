@@ -59,6 +59,3 @@
                            '("/dev/ttyACM0" "/dev/ttyACM1")))))
     (should (equal (kai/adp-get-devs)
                    '("/dev/ttyACM0")))))
-
-;; Run the tests
-(ert t)
