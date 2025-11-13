@@ -5,7 +5,9 @@
   (shell-command-to-string (format "udevadm info --name=%s" tty)))
 
 (defun kai/read-tty-path (defaults)
-  (read-file-name "TTY device: " "/dev/" defaults t))
+  (if (and defaults (= (length defaults) 1))
+      (car defaults)
+    (read-file-name "TTY device: " "/dev/" defaults t)))
 
 (defun kai/find-serial-devices (udev-search-string dev-pattern)
   "Find all serial devices."
