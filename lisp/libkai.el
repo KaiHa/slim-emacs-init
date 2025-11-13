@@ -9,12 +9,13 @@
       (car defaults)
     (read-file-name "TTY device: " "/dev/" defaults t)))
 
-(defun kai/find-serial-devices (udev-search-string dev-pattern)
+(defun kai/find-serial-devices (search-string)
   "Find all serial devices."
   (cl-flet ((predicate (tty)
-              (string-search udev-search-string (kai/udevadm-info tty))))
+              (when (string-search search-string (cdr tty))
+                (list (car tty)))))
     (sort
-     (seq-filter #'predicate (directory-files "/dev" t dev-pattern))
+     (seq-mapcat #'predicate (kai/list-serial-ports))
      :lessp #'string-version-lessp)))
 
 (defun kai/zip-both-ends (l)
@@ -52,7 +53,7 @@
 
 (defun kai/adp-get-devs ()
   "Find all ADP devices."
-  (kai/find-serial-devices "ID_VENDOR=Microchip_Technology_Inc." "ttyACM[0-9]+"))
+  (kai/find-serial-devices "Microchip Technology Inc"))
 
 (defun kai/adp-instruct (tty instruction)
   "Send INSTRUCTION to device at TTY."
@@ -97,7 +98,7 @@
 
 (defun kai/powsup-get-devs ()
   "Find all Silicon Labs USB device in /dev."
-  (kai/find-serial-devices "ID_VENDOR=Silicon_Labs" "ttyUSB[0-9]+"))
+  (kai/find-serial-devices "Silicon Labs CP210"))
 
 (defun kai/powsup-add-process-filter (tty)
   (cl-flet ((filterfunc (proc s)
@@ -202,13 +203,13 @@ serial-connection wich has the QNX shell open."
   "Returns a LIST of CONS of serial-ports and description."
   (if (eq system-type 'windows-nt)
       (with-temp-buffer
-        (call-process "mode" nil t)
+        (call-process "powershell" nil t nil "Get-CimInstance Win32_SerialPort | Select-Object DeviceID, Description")
         (mapcan
          (lambda (l)
-           (if (string-prefix-p "Status for device COM" l)
+           (if (string-prefix-p "COM" l)
                (list (cons
-                      (format "\\\\.\\%s" (substring l 18 -1))
-                      (substring l 18 -1)))))
+                      (format "\\\\.\\%s" (car (split-string l)))
+                      (replace-regexp-in-string "  +" " — " l)))))
          (string-lines (buffer-string) t)))
     (mapcar
      (lambda (tty)
@@ -223,4 +224,4 @@ serial-connection wich has the QNX shell open."
                   "\\(.*\n\\)*.*ID_SERIAL=\\(.*\\)\\(.*\n\\)*"
                   "\\2"
                   (kai/udevadm-info tty))))))
-     (sort (directory-files "/dev" t "ttyUSB[0-9]+") :lessp 'string-version-lessp))))
+     (sort (directory-files "/dev" t "tty\\(USB\\|ACM\\)[0-9]+") :lessp 'string-version-lessp))))

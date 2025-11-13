@@ -6,10 +6,10 @@
 
 ;; Mock data for testing
 (defvar kai/test-udev-info-data
-  '(("/dev/ttyUSB0" . "ID_VENDOR=Silicon_Labs\nID_SERIAL=12345")
-    ("/dev/ttyUSB1" . "ID_VENDOR=Silicon_Labs\nID_SERIAL=67890")
-    ("/dev/ttyACM0" . "ID_VENDOR=Microchip_Technology_Inc.\nID_SERIAL=11111")
-    ("/dev/ttyACM1" . "ID_VENDOR=Other_Vendor\nID_SERIAL=22222")))
+  '(("/dev/ttyUSB0" . "Silicon Labs CP2102")
+    ("/dev/ttyUSB1" . "Silicon Labs CP2102")
+    ("/dev/ttyACM0" . "Microchip Technology Inc")
+    ("/dev/ttyACM1" . "Other Vendor")))
 
 ;; Mock function for testing
 (defun kai/test-udevadm-info (tty)
@@ -37,11 +37,11 @@
                (seq-filter (lambda (f) (string-match-p pattern f))
                            '("/dev/ttyUSB0" "/dev/ttyUSB1"
                              "/dev/ttyACM0" "/dev/ttyACM1")))))
-    (should (equal (kai/find-serial-devices "ID_VENDOR=Silicon_Labs" "ttyUSB[0-9]+")
+    (should (equal (kai/find-serial-devices "Silicon Labs")
                    '("/dev/ttyUSB0" "/dev/ttyUSB1")))
-    (should (equal (kai/find-serial-devices "ID_VENDOR=Microchip_Technology_Inc." "ttyACM[0-9]+")
+    (should (equal (kai/find-serial-devices "Microchip Technology Inc")
                    '("/dev/ttyACM0")))
-    (should (equal (kai/find-serial-devices "ID_VENDOR=NonExisting" "tty.*")
+    (should (equal (kai/find-serial-devices "NonExisting")
                    nil))))
 
 (ert-deftest test-kai/powsup-get-devs ()

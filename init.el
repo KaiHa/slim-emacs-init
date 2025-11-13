@@ -182,7 +182,7 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
          (kai/serial-term ,(car tty))
          :label ,(cdr tty)])
      (kai/list-serial-ports))
-    '(["Open all ttyUSBs" kai/serial-open-all
+    '(["Open all of the above serial terms" kai/serial-open-all
        :active (kai/list-serial-ports)]))))
 
 (defun kai/update-menu ()
