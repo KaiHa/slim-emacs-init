@@ -1,6 +1,21 @@
 ;;; -*- lexical-binding: t -*-
 
 (provide 'libkai)
+
+(defvar libkai--cache (make-hash-table :test 'eq)
+  "Hash table to store cached values.")
+
+(defun kai/cached (fun timeout)
+  "Call FUN with ARGS, caching the result for TIMEOUT seconds.
+If the cache is valid, return the cached value; otherwise, recompute."
+  (let ((cached (gethash fun libkai--cache)))
+    (if (and cached
+             (time-less-p nil (time-add (cdr cached) timeout)))
+        (car cached)
+      (let ((result (apply fun nil)))
+        (puthash fun (cons result (current-time)) libkai--cache)
+        result))))
+
 (defun kai/udevadm-info (tty)
   (shell-command-to-string (format "udevadm info --name=%s" tty)))
 
@@ -200,6 +215,11 @@ serial-connection wich has the QNX shell open."
     (message "This function is meant to be called from a serial-term buffer!")))
 
 (defun kai/list-serial-ports ()
+  (kai/cached
+   #'kai/list-serial-ports-uncached
+   5))
+
+(defun kai/list-serial-ports-uncached ()
   "Returns a LIST of CONS of serial-ports and description."
   (if (eq system-type 'windows-nt)
       (with-temp-buffer

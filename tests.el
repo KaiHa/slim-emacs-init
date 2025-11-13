@@ -32,6 +32,7 @@
 (ert-deftest test-kai/find-serial-devices ()
   "Test kai/find-serial-devices function."
   (cl-letf (((symbol-function 'kai/udevadm-info) #'kai/test-udevadm-info)
+            ((symbol-function 'kai/cached) (lambda (fun _) (apply fun nil)))
             ((symbol-function 'directory-files)
              (lambda (_dir _full pattern)
                (seq-filter (lambda (f) (string-match-p pattern f))
@@ -47,6 +48,7 @@
 (ert-deftest test-kai/powsup-get-devs ()
   "Test kai/powsup-get-devs function."
   (cl-letf (((symbol-function 'kai/udevadm-info) #'kai/test-udevadm-info)
+            ((symbol-function 'kai/cached) (lambda (fun _) (apply fun nil)))
             ((symbol-function 'directory-files)
              (lambda (_dir _full pattern)
                (seq-filter (lambda (f) (string-match-p pattern f))
@@ -57,9 +59,18 @@
 (ert-deftest test-kai/adp-get-devs ()
   "Test kai/adp-get-devs function."
   (cl-letf (((symbol-function 'kai/udevadm-info) #'kai/test-udevadm-info)
+            ((symbol-function 'kai/cached) (lambda (fun _) (apply fun nil)))
             ((symbol-function 'directory-files)
              (lambda (_dir _full pattern)
                (seq-filter (lambda (f) (string-match-p pattern f))
                            '("/dev/ttyACM0" "/dev/ttyACM1")))))
     (should (equal (kai/adp-get-devs)
                    '("/dev/ttyACM0")))))
+
+(ert-deftest test-kai/cached ()
+  "Test kai/cached function."
+  (should (equal (kai/cached #'random 1) (kai/cached #'random 1)))
+  (should-not (equal (kai/cached #'random 1)
+                     (progn
+                       (sit-for 1.2)
+                       (kai/cached #'random 1)))))
