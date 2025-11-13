@@ -152,8 +152,7 @@
 
 (defun kai/powsup-status (tty)
   "Get status of power supply at TTY."
-  (interactive
-   (list (read-file-name "Power Supply TTY: " "/dev/" "ttyUSB0")))
+  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
   (kai/powsup-instruct tty "GETD")
   (with-timeout (0.5 "*timeout*")
     (with-current-buffer (get-buffer-create "*powsup replies*")
@@ -162,10 +161,13 @@
                        (string-match-p "OK$"
                                        (kai/buffer-get-n-last-line 1))))
         (sit-for 0.1))
-      (apply #'format "ACT: %s.%sV %s.%sA"
-             (seq-subseq
-              (seq-partition (kai/buffer-get-n-last-line 1) 2)
-              0 4)))))
+      (let ((reply (apply #'format "ACT: %s.%sV %s.%sA"
+                          (seq-subseq
+                           (seq-partition (kai/buffer-get-n-last-line 1) 2)
+                           0 4))))
+        (if (called-interactively-p)
+            (message reply)
+          reply)))))
 
 (defun kai/serial-term-buffer-p ()
   (if-let* ((proc (get-buffer-process (current-buffer))))
