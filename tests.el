@@ -1,4 +1,8 @@
 (require 'ert)
+(add-to-list 'load-path (file-name-concat
+                         (file-name-directory (or load-file-name buffer-file-name))
+                         "lisp"))
+(require 'libkai)
 
 ;; Mock data for testing
 (defvar kai/test-udev-info-data
