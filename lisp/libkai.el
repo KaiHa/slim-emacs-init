@@ -6,7 +6,7 @@
   "Hash table to store cached values.")
 
 (defun kai/cached (fun timeout)
-  "Call FUN with ARGS, caching the result for TIMEOUT seconds.
+  "Call FUN, caching the result for TIMEOUT seconds.
 If the cache is valid, return the cached value; otherwise, recompute."
   (let ((cached (gethash fun libkai--cache)))
     (if (and cached
