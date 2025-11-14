@@ -24,10 +24,10 @@ If the cache is valid, return the cached value; otherwise, recompute."
       (car defaults)
     (read-file-name "TTY device: " "/dev/" defaults t)))
 
-(defun kai/find-serial-devices (search-string)
+(defun kai/find-serial-devices (regex)
   "Find all serial devices."
   (cl-flet ((predicate (tty)
-              (when (string-search search-string (cdr tty))
+              (when (string-match-p regex (cdr tty))
                 (list (car tty)))))
     (sort
      (seq-mapcat #'predicate (kai/list-serial-ports))
@@ -68,7 +68,9 @@ If the cache is valid, return the cached value; otherwise, recompute."
 
 (defun kai/adp-get-devs ()
   "Find all ADP devices."
-  (kai/find-serial-devices "Microchip Technology Inc"))
+  (cond
+   ((eq system-type 'windows-nt) (kai/find-serial-devices "Microsoft +USB Serial Device"))
+   (t (kai/find-serial-devices "Microchip Technology Inc"))))
 
 (defun kai/adp-instruct (tty instruction)
   "Send INSTRUCTION to device at TTY."
@@ -223,13 +225,16 @@ serial-connection wich has the QNX shell open."
   "Returns a LIST of CONS of serial-ports and description."
   (if (eq system-type 'windows-nt)
       (with-temp-buffer
-        (call-process "powershell" nil t nil "-NoProfile" "-NonInteractive" "Get-CimInstance Win32_SerialPort | Select-Object DeviceID, Description")
+        (call-process "powershell" nil t nil "-NoProfile" "-NonInteractive" "Get-CimInstance Win32_PnPEntity | Where-Object {$_.Caption -match 'COM[0-9]'} | Select-Object Manufacturer, Name")
         (mapcan
          (lambda (l)
-           (if (string-prefix-p "COM" l)
+           (if (string-match-p "COM[0-9]" l)
                (list (cons
-                      (format "\\\\.\\%s" (car (split-string l)))
-                      (replace-regexp-in-string "  +" " — " l)))))
+                      (replace-regexp-in-string ".*(\\(COM[0-9]+\\)).*" "\\\\\\\\.\\\\\\1" l)
+                      (replace-regexp-in-string
+                       "  +"
+                       " "
+                       (replace-regexp-in-string "\\(.*\\)(\\(COM[0-9]+\\)).*" "\\2 — \\1" l))))))
          (string-lines (buffer-string) t)))
     (mapcar
      (lambda (tty)
