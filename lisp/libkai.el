@@ -223,7 +223,7 @@ serial-connection wich has the QNX shell open."
   "Returns a LIST of CONS of serial-ports and description."
   (if (eq system-type 'windows-nt)
       (with-temp-buffer
-        (call-process "powershell" nil t nil "Get-CimInstance Win32_SerialPort | Select-Object DeviceID, Description")
+        (call-process "powershell" nil t nil "-NoProfile" "-NonInteractive" "Get-CimInstance Win32_SerialPort | Select-Object DeviceID, Description")
         (mapcan
          (lambda (l)
            (if (string-prefix-p "COM" l)
