@@ -74,3 +74,12 @@
                      (progn
                        (sit-for 1.2)
                        (kai/cached #'random 1)))))
+
+(ert-deftest test-kai/buffer-get-n-last-line ()
+  (with-temp-buffer
+    (insert "First line\nSecond line\nThird line\n")
+    (should (equal (kai/buffer-get-n-last-line 1)
+                   "Third line"))
+    (goto-char (point-min))
+    (should (equal (kai/buffer-get-n-last-line 2)
+                   "Second line"))))
