@@ -125,7 +125,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defgroup powsup nil "Remote control of Manson power supplies.")
+(defgroup powsup nil "Remote control of power supplies.")
 
 (defcustom powsup-show-status
   nil
@@ -145,13 +145,13 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
       (format "Power Supply — %s" (file-name-base tty))
       `(["Status" nil
          :visible powsup-show-status
-         :label (kai/powsup-status ,tty)
+         :label (kai/manson-powsup-status ,tty)
          :active nil]
-        ["Power On" (kai/powsup-on ,tty) t]
-        ["Power Off" (kai/powsup-off ,tty) t]
-        ["Power-Cycle (off/on)" (kai/powsup-powercycle ,tty) t]
-        ["Show Status Message" (message "power supply - %s" (kai/powsup-status ,tty)) t])))
-   (kai/powsup-get-devs)))
+        ["Power On" (kai/manson-powsup-on ,tty) t]
+        ["Power Off" (kai/manson-powsup-off ,tty) t]
+        ["Power-Cycle (off/on)" (kai/manson-powsup-powercycle ,tty) t]
+        ["Show Status Message" (message "power supply - %s" (kai/manson-powsup-status ,tty)) t])))
+   (kai/manson-powsup-get-devs)))
 
 (defun kai/get-adp-menu ()
   "Generate menu items for all ADP devices."

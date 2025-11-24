@@ -113,13 +113,13 @@ If the cache is valid, return the cached value; otherwise, recompute."
   (run-at-time 2 nil #'kai/adp-instruct tty "PWR_OFF 0"))
 
 
-(defun kai/powsup-get-devs ()
-  "Find all Silicon Labs USB device in /dev."
+(defun kai/manson-powsup-get-devs ()
+  "Find all Manson power supplies."
   (kai/find-serial-devices "Silicon Labs CP210"))
 
-(defun kai/powsup-add-process-filter (tty)
+(defun kai/manson-powsup-add-process-filter (tty)
   (cl-flet ((filterfunc (proc s)
-              (with-current-buffer (get-buffer-create "*powsup replies*")
+              (with-current-buffer (get-buffer-create (format "*powsup replies of %s*" tty))
                 (goto-char (point-max))
                 (insert s)
                 (if (and (>= (point-max) 3)
@@ -131,34 +131,34 @@ If the cache is valid, return the cached value; otherwise, recompute."
      :before
      (process-filter (get-buffer-process tty)) #'filterfunc)))
 
-(defun kai/powsup-instruct (tty instruction)
-  "Send INSTRUCTION to power supply at TTY."
+(defun kai/manson-powsup-instruct (tty instruction)
+  "Send INSTRUCTION to Manson power supply at TTY."
   (unless (and (get-buffer tty)
                (get-buffer-process tty))
     (serial-term tty 9600)
-    (kai/powsup-add-process-filter tty)
+    (kai/manson-powsup-add-process-filter tty)
     (bury-buffer))
-  (with-current-buffer (get-buffer-create "*powsup replies*")
+  (with-current-buffer (get-buffer-create (format "*powsup replies of %s*" tty))
     (goto-char (point-max))
     (insert "INSTR: " instruction "\n"))
   (with-current-buffer tty
     (term-send-string nil (format "%s\r" instruction))))
 
-(defun kai/powsup-on (tty)
+(defun kai/manson-powsup-on (tty)
   "Power on device at TTY."
-  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
-  (kai/powsup-instruct tty "SOUT0"))
+  (interactive (list (kai/read-tty-path (kai/manson-powsup-get-devs))))
+  (kai/manson-powsup-instruct tty "SOUT0"))
 
-(defun kai/powsup-off (tty)
+(defun kai/manson-powsup-off (tty)
   "Power off device at TTY."
-  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
-  (kai/powsup-instruct tty "SOUT1"))
+  (interactive (list (kai/read-tty-path (kai/manson-powsup-get-devs))))
+  (kai/manson-powsup-instruct tty "SOUT1"))
 
-(defun kai/powsup-powercycle (tty)
+(defun kai/manson-powsup-powercycle (tty)
   "Power cycle device at TTY."
-  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
-  (kai/powsup-off tty)
-  (run-at-time 2 nil #'kai/powsup-on tty))
+  (interactive (list (kai/read-tty-path (kai/manson-powsup-get-devs))))
+  (kai/manson-powsup-off tty)
+  (run-at-time 2 nil #'kai/manson-powsup-on tty))
 
 (defun kai/buffer-get-n-last-line (n)
   "Return the N last line as a string."
@@ -168,12 +168,12 @@ If the cache is valid, return the cached value; otherwise, recompute."
     (buffer-substring-no-properties (line-beginning-position)
                                     (line-end-position))))
 
-(defun kai/powsup-status (tty)
+(defun kai/manson-powsup-status (tty)
   "Get status of power supply at TTY."
-  (interactive (list (kai/read-tty-path (kai/powsup-get-devs))))
-  (kai/powsup-instruct tty "GETD")
+  (interactive (list (kai/read-tty-path (kai/manson-powsup-get-devs))))
+  (kai/manson-powsup-instruct tty "GETD")
   (with-timeout (0.5 "*timeout*")
-    (with-current-buffer (get-buffer-create "*powsup replies*")
+    (with-current-buffer (get-buffer-create (format "*powsup replies of %s*" tty))
       (while (not (and (string-match-p "INSTR: GETD"
                                        (kai/buffer-get-n-last-line 2))
                        (string-match-p "OK$"

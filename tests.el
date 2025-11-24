@@ -45,15 +45,15 @@
     (should (equal (kai/find-serial-devices "NonExisting")
                    nil))))
 
-(ert-deftest test-kai/powsup-get-devs ()
-  "Test kai/powsup-get-devs function."
+(ert-deftest test-kai/manson-powsup-get-devs ()
+  "Test kai/manson-powsup-get-devs function."
   (cl-letf (((symbol-function 'kai/udevadm-info) #'kai/test-udevadm-info)
             ((symbol-function 'kai/cached) (lambda (fun _) (apply fun nil)))
             ((symbol-function 'directory-files)
              (lambda (_dir _full pattern)
                (seq-filter (lambda (f) (string-match-p pattern f))
                            '("/dev/ttyUSB0" "/dev/ttyUSB1")))))
-    (should (equal (kai/powsup-get-devs)
+    (should (equal (kai/manson-powsup-get-devs)
                    '("/dev/ttyUSB0" "/dev/ttyUSB1")))))
 
 (ert-deftest test-kai/adp-get-devs ()
