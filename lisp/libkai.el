@@ -115,7 +115,9 @@ If the cache is valid, return the cached value; otherwise, recompute."
 
 (defun kai/aim-tti-powsup-get-devs ()
   "Find all AIM-TTi power supplies."
-  (kai/find-serial-devices "TTi QPX1200"))
+  (cond
+   ((eq system-type 'windows-nt) (kai/find-serial-devices "Microsoft +USB Serial Device"))
+   (t (kai/find-serial-devices "TTi QPX1200"))))
 
 (defun kai/aim-tti-powsup-add-process-filter (tty)
   (cl-flet ((filterfunc (proc s)

@@ -134,6 +134,8 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
   :type 'boolean
   :group 'powsup)
 
+(defvar *kai/tty-info* (make-hash-table) "Session settings for the serial devices.")
+
 (easy-menu-define kais-toolbox-menu nil "Kais Toolbox Menu"
   '("Kais-Toolbox"))
 
@@ -156,30 +158,53 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
    (mapcar
     (lambda (tty)
       (easy-menu-create-menu
-       (format "Power Supply — %s" (file-name-base tty))
-       `(["Status" nil
+       (format "AIM-TTi Power Supply — %s" (file-name-base tty))
+       `(["No, this NOT a power supply" (puthash ,tty 'none *kai/tty-info*)
+          :style radio :selected (not (kai/aim-tti-p ,tty)) :visible (kai/windowsp)]
+         ["Yes, this is a power supply" (puthash ,tty 'aim-tti *kai/tty-info*)
+          :style radio :selected (kai/aim-tti-p ,tty) :visible (kai/windowsp)]
+         "--"
+         ["Status" nil
           :visible powsup-show-status
           :label (kai/aim-tti-powsup-status ,tty)
           :active nil]
-         ["Power On" (kai/aim-tti-powsup-on ,tty) t]
-         ["Power Off" (kai/aim-tti-powsup-off ,tty) t]
-         ["Power-Cycle (off/on)" (kai/aim-tti-powsup-powercycle ,tty) t]
-         ["Show Status Message" (message "power supply - %s" (kai/aim-tti-powsup-status ,tty)) t])))
+         ["Power On" (kai/aim-tti-powsup-on ,tty) :active (kai/aim-tti-p ,tty)]
+         ["Power Off" (kai/aim-tti-powsup-off ,tty) :active (kai/aim-tti-p ,tty)]
+         ["Power-Cycle (off/on)" (kai/aim-tti-powsup-powercycle ,tty) :active (kai/aim-tti-p ,tty)]
+         ["Show Status Message" (message "power supply - %s" (kai/aim-tti-powsup-status ,tty)) :active (kai/aim-tti-p ,tty)])))
     (kai/aim-tti-powsup-get-devs))))
+
+(defun kai/adpp (tty)
+  (if (kai/windowsp)
+      (equal 'adp (gethash tty *kai/tty-info*))
+    t))
+
+(defun kai/aim-tti-p (tty)
+  (if (kai/windowsp)
+      (equal 'aim-tti (gethash tty *kai/tty-info*))
+    t))
+
+(defun kai/windowsp ()
+  (eq system-type 'windows-nt))
 
 (defun kai/get-adp-menu ()
   "Generate menu items for all ADP devices."
   (mapcar
    (lambda (tty)
      (easy-menu-create-menu
-      (format "ADP — %s" (file-name-base tty))
-      `(["Power On" (kai/adp-pwr-on ,tty) t]
-        ["Power Off" (kai/adp-pwr-off ,tty) t]
-        ["Reboot" (kai/adp-reboot ,tty) t]
+      (format "Qualcomm ADP — %s" (file-name-base tty))
+      `(["No, this NOT an ADP" (puthash ,tty 'none *kai/tty-info*)
+         :style radio :selected (not (kai/adpp ,tty)) :visible (kai/windowsp)]
+        ["Yes, this is an ADP" (puthash ,tty 'adp *kai/tty-info*)
+         :style radio :selected (kai/adpp ,tty) :visible (kai/windowsp)]
+        "--"
+        ["Power On" (kai/adp-pwr-on ,tty) :active (kai/adpp ,tty)]
+        ["Power Off" (kai/adp-pwr-off ,tty) :active (kai/adpp ,tty)]
+        ["Reboot" (kai/adp-reboot ,tty) :active (kai/adpp ,tty)]
         "--"
         ["Emergency Download Mode (EDL)" nil nil]
-        ["Enter EDL" (kai/adp-enter-edl ,tty) t]
-        ["Exit EDL" (kai/adp-exit-edl ,tty) t])))
+        ["Enter EDL" (kai/adp-enter-edl ,tty) (kai/adpp ,tty)]
+        ["Exit EDL" (kai/adp-exit-edl ,tty) (kai/adpp ,tty)])))
    (kai/adp-get-devs)))
 
 ;;; Fill the "Serial Terminal" menu
