@@ -139,19 +139,33 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
 
 (defun kai/get-powsup-menu ()
   "Generate menu items for all power-supplies."
-  (mapcar
-   (lambda (tty)
-     (easy-menu-create-menu
-      (format "Power Supply — %s" (file-name-base tty))
-      `(["Status" nil
-         :visible powsup-show-status
-         :label (kai/manson-powsup-status ,tty)
-         :active nil]
-        ["Power On" (kai/manson-powsup-on ,tty) t]
-        ["Power Off" (kai/manson-powsup-off ,tty) t]
-        ["Power-Cycle (off/on)" (kai/manson-powsup-powercycle ,tty) t]
-        ["Show Status Message" (message "power supply - %s" (kai/manson-powsup-status ,tty)) t])))
-   (kai/manson-powsup-get-devs)))
+  (append
+   (mapcar
+    (lambda (tty)
+      (easy-menu-create-menu
+       (format "Manson Power Supply — %s" (file-name-base tty))
+       `(["Status" nil
+          :visible powsup-show-status
+          :label (kai/manson-powsup-status ,tty)
+          :active nil]
+         ["Power On" (kai/manson-powsup-on ,tty) t]
+         ["Power Off" (kai/manson-powsup-off ,tty) t]
+         ["Power-Cycle (off/on)" (kai/manson-powsup-powercycle ,tty) t]
+         ["Show Status Message" (message "power supply - %s" (kai/manson-powsup-status ,tty)) t])))
+    (kai/manson-powsup-get-devs))
+   (mapcar
+    (lambda (tty)
+      (easy-menu-create-menu
+       (format "Power Supply — %s" (file-name-base tty))
+       `(["Status" nil
+          :visible powsup-show-status
+          :label (kai/aim-tti-powsup-status ,tty)
+          :active nil]
+         ["Power On" (kai/aim-tti-powsup-on ,tty) t]
+         ["Power Off" (kai/aim-tti-powsup-off ,tty) t]
+         ["Power-Cycle (off/on)" (kai/aim-tti-powsup-powercycle ,tty) t]
+         ["Show Status Message" (message "power supply - %s" (kai/aim-tti-powsup-status ,tty)) t])))
+    (kai/aim-tti-powsup-get-devs))))
 
 (defun kai/get-adp-menu ()
   "Generate menu items for all ADP devices."
