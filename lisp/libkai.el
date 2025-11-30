@@ -2,6 +2,14 @@
 
 (provide 'libkai)
 
+(defgroup kai/serial nil "Additional serial settings.")
+
+(defcustom kai/serial-ignored-devices
+  nil
+  "List of paths to serial devices that should be ignored in the serial term menu."
+  :type '(repeat string)
+  :group 'kai/serial)
+
 (defvar libkai--cache (make-hash-table :test 'eq)
   "Hash table to store cached values.")
 
@@ -30,7 +38,7 @@ If the cache is valid, return the cached value; otherwise, recompute."
               (when (string-match-p regex (cdr tty))
                 (list (car tty)))))
     (sort
-     (seq-mapcat #'predicate (kai/list-serial-ports))
+     (seq-mapcat #'predicate (kai/list-serial-ports t))
      :lessp #'string-version-lessp)))
 
 (defun kai/zip-both-ends (l)
@@ -292,10 +300,12 @@ serial-connection wich has the QNX shell open."
         (message "File was send to the /tmp/ directory of the serial device."))
     (message "This function is meant to be called from a serial-term buffer!")))
 
-(defun kai/list-serial-ports ()
-  (kai/cached
-   #'kai/list-serial-ports-uncached
-   5))
+(defun kai/list-serial-ports (&optional allp)
+  (seq-filter
+   (lambda (x) (or allp (not (member (car x) kai/serial-ignored-devices))))
+   (kai/cached
+    #'kai/list-serial-ports-uncached
+    5)))
 
 (defun kai/list-serial-ports-uncached ()
   "Returns a LIST of CONS of serial-ports and description."

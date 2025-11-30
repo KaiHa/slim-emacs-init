@@ -125,14 +125,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defgroup powsup nil "Remote control of power supplies.")
-
-(defcustom powsup-show-status
+(defcustom kai/powsup-show-status
   nil
   "Don't show the status of the powersupply in the menu if nil, otherwise show it.
 Showing the status blocks the serial port of the power supply as soon as Emacs runs."
   :type 'boolean
-  :group 'powsup)
+  :group 'kai/serial)
 
 (defvar *kai/tty-info* (make-hash-table) "Session settings for the serial devices.")
 
@@ -147,7 +145,7 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
       (easy-menu-create-menu
        (format "Manson Power Supply — %s" (file-name-base tty))
        `(["Status" nil
-          :visible powsup-show-status
+          :visible kai/powsup-show-status
           :label (kai/manson-powsup-status ,tty)
           :active nil]
          ["Power On" (kai/manson-powsup-on ,tty) t]
@@ -165,7 +163,7 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
           :style radio :selected (kai/aim-tti-p ,tty) :visible (kai/windowsp)]
          "--"
          ["Status" nil
-          :visible powsup-show-status
+          :visible kai/powsup-show-status
           :label (kai/aim-tti-powsup-status ,tty)
           :active nil]
          ["Power On" (kai/aim-tti-powsup-on ,tty) :active (kai/aim-tti-p ,tty)]
