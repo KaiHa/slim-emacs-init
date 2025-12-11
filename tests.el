@@ -83,3 +83,19 @@
     (goto-char (point-min))
     (should (equal (kai/buffer-get-n-last-line 2)
                    "Second line"))))
+
+(ert-deftest test-kai/show-shortcuts-with-adp ()
+  "Test kai/show-shortcuts function includes ADP buttons when ADP devices are available."
+  (cl-letf (((symbol-function 'kai/manson-powsup-get-devs) (lambda () nil))
+            ((symbol-function 'kai/aim-tti-powsup-get-devs) (lambda () nil))
+            ((symbol-function 'kai/adp-get-devs) (lambda () '("/dev/ttyACM0"))))
+    (kai/show-shortcuts)
+    (let ((buf (get-buffer "*kais shortcuts*")))
+      (with-current-buffer buf
+        (let ((content (buffer-string)))
+          (should (string-match-p "Qualcomm ADP" content))
+          (should (string-match-p "Power On" content))
+          (should (string-match-p "Power Off" content))
+          (should (string-match-p "Reboot" content))
+          (should (string-match-p "Enter EDL" content))
+          (should (string-match-p "Exit EDL" content)))))))

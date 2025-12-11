@@ -336,3 +336,53 @@ serial-connection wich has the QNX shell open."
                   "\\2"
                   (kai/udevadm-info tty))))))
      (sort (directory-files "/dev" t "tty\\(USB\\|ACM\\)[0-9]+") :lessp 'string-version-lessp))))
+
+
+(defun kai/show-shortcuts ()
+  "Open a buffer with buttons for all applicable power-supply functions."
+  (interactive)
+  (let ((buf (get-buffer-create "*kais shortcuts*")))
+    (with-current-buffer buf
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (insert "#+title: Shortcuts\n\n")
+
+      ;; ADP functions
+      (when-let ((adp-devs (kai/adp-get-devs)))
+        (insert "* Qualcomm ADP\n\n")
+        (dolist (tty adp-devs)
+          (insert (format "** Device: %s\n\n" (file-name-base tty)))
+          (insert (format "[[elisp:(kai/adp-pwr-on \"%s\")][Power On]]  /  " tty))
+          (insert (format "[[elisp:(kai/adp-pwr-off \"%s\")][Power Off]]\n\n" tty))
+          (insert (format "[[elisp:(kai/adp-reboot \"%s\")][Reboot]]\n\n" tty))
+          (insert (format "[[elisp:(kai/adp-enter-edl \"%s\")][Enter EDL]]  /  " tty))
+          (insert (format "[[elisp:(kai/adp-exit-edl \"%s\")][Exit EDL]]\n\n" tty))))
+
+      ;; Manson Power Supply functions
+      (when-let ((manson-devs (kai/manson-powsup-get-devs)))
+        (insert "* Manson Power Supply\n\n")
+        (dolist (tty manson-devs)
+          (insert (format "** Device: %s\n\n" (file-name-base tty)))
+          (insert (format "[[elisp:(kai/manson-powsup-on \"%s\")][Power On]]  /  " tty))
+          (insert (format "[[elisp:(kai/manson-powsup-off \"%s\")][Power Off]]\n\n" tty))
+          (insert (format "[[elisp:(kai/manson-powsup-powercycle \"%s\")][Power Cycle]]\n\n" tty))
+          (insert (format "[[elisp:(kai/manson-powsup-status \"%s\")][Status]]\n\n" tty))))
+
+      ;; AIM-TTi Power Supply functions
+      (when-let ((aim-devs (kai/aim-tti-powsup-get-devs)))
+        (insert "* AIM-TTi Power Supply\n\n")
+        (dolist (tty aim-devs)
+          (insert (format "** Device: %s\n\n" (file-name-base tty)))
+          (insert (format "[[elisp:(kai/aim-tti-powsup-on \"%s\")][Power On]]  /  " tty))
+          (insert (format "[[elisp:(kai/aim-tti-powsup-off \"%s\")][Power Off]]\n\n" tty))
+          (insert (format "[[elisp:(kai/aim-tti-powsup-powercycle \"%s\")][Power Cycle]]\n\n" tty))
+          (insert (format "[[elisp:(kai/aim-tti-powsup-status \"%s\")][Status]]\n\n" tty))))
+
+      (setq buffer-read-only t)
+      (org-mode)
+      (setq-local org-link-elisp-skip-confirm-regexp "^(kai/.*")
+      ;; Set up key bindings for the shortcut buffer
+      (define-key (current-local-map) (kbd "TAB") 'org-next-link)
+      (define-key (current-local-map) (kbd "<return>") 'org-open-at-point)
+      (define-key (current-local-map) (kbd "<backtab>") 'org-previous-link)
+      (display-buffer buf))))

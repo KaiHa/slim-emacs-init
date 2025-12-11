@@ -226,6 +226,7 @@ Showing the status blocks the serial port of the power supply as soon as Emacs r
   (mapcar
    (lambda (x) (easy-menu-remove-item kais-toolbox-menu nil (nth 2 x)))
    (seq-drop (easy-menu-get-map kais-toolbox-menu nil) 2))
+  (easy-menu-add-item kais-toolbox-menu nil ["Open shortcut buffer" kai/show-shortcuts t])
   (easy-menu-add-item kais-toolbox-menu nil (kai/get-serial-menu))
   (mapcar (lambda (x) (easy-menu-add-item kais-toolbox-menu nil x)) (kai/get-adp-menu))
   (mapcar (lambda (x) (easy-menu-add-item kais-toolbox-menu nil x)) (kai/get-powsup-menu)))
