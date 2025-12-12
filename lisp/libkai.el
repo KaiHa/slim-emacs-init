@@ -349,9 +349,8 @@ serial-connection wich has the QNX shell open."
 
       ;; ADP functions
       (when-let ((adp-devs (kai/adp-get-devs)))
-        (insert "* Qualcomm ADP\n\n")
         (dolist (tty adp-devs)
-          (insert (format "** Device: %s\n\n" (file-name-base tty)))
+          (insert (format "* Qualcomm ADP at %s\n\n" (file-name-base tty)))
           (insert (format "[[elisp:(kai/adp-pwr-on \"%s\")][Power On]]  /  " tty))
           (insert (format "[[elisp:(kai/adp-pwr-off \"%s\")][Power Off]]\n\n" tty))
           (insert (format "[[elisp:(kai/adp-reboot \"%s\")][Reboot]]\n\n" tty))
@@ -360,9 +359,8 @@ serial-connection wich has the QNX shell open."
 
       ;; Manson Power Supply functions
       (when-let ((manson-devs (kai/manson-powsup-get-devs)))
-        (insert "* Manson Power Supply\n\n")
         (dolist (tty manson-devs)
-          (insert (format "** Device: %s\n\n" (file-name-base tty)))
+          (insert (format "* Manson Power Supply at %s\n\n" (file-name-base tty)))
           (insert (format "[[elisp:(kai/manson-powsup-on \"%s\")][Power On]]  /  " tty))
           (insert (format "[[elisp:(kai/manson-powsup-off \"%s\")][Power Off]]\n\n" tty))
           (insert (format "[[elisp:(kai/manson-powsup-powercycle \"%s\")][Power Cycle]]\n\n" tty))
@@ -370,9 +368,8 @@ serial-connection wich has the QNX shell open."
 
       ;; AIM-TTi Power Supply functions
       (when-let ((aim-devs (kai/aim-tti-powsup-get-devs)))
-        (insert "* AIM-TTi Power Supply\n\n")
         (dolist (tty aim-devs)
-          (insert (format "** Device: %s\n\n" (file-name-base tty)))
+          (insert (format "* AIM-TTi Power Supply at %s\n\n" (file-name-base tty)))
           (insert (format "[[elisp:(kai/aim-tti-powsup-on \"%s\")][Power On]]  /  " tty))
           (insert (format "[[elisp:(kai/aim-tti-powsup-off \"%s\")][Power Off]]\n\n" tty))
           (insert (format "[[elisp:(kai/aim-tti-powsup-powercycle \"%s\")][Power Cycle]]\n\n" tty))
