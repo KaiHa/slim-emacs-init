@@ -383,6 +383,7 @@ serial-connection wich has the QNX shell open."
       (setq-local org-link-elisp-skip-confirm-regexp "^(kai/.*")
       ;; Set up key bindings for the shortcut buffer
       (define-key (current-local-map) (kbd "TAB") 'org-next-link)
+      (define-key (current-local-map) (kbd "RET") 'org-open-at-point)
       (define-key (current-local-map) (kbd "<return>") 'org-open-at-point)
       (define-key (current-local-map) (kbd "<backtab>") 'org-previous-link)
       (display-buffer buf))))
