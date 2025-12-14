@@ -99,3 +99,33 @@
           (should (string-match-p "Reboot" content))
           (should (string-match-p "Enter EDL" content))
           (should (string-match-p "Exit EDL" content)))))))
+
+(ert-deftest test-kai/show-shortcuts-with-manson ()
+  "Test kai/show-shortcuts function includes Manson power supply buttons when Manson devices are available."
+  (cl-letf (((symbol-function 'kai/manson-powsup-get-devs) (lambda () '("/dev/ttyUSB0")))
+            ((symbol-function 'kai/aim-tti-powsup-get-devs) (lambda () nil))
+            ((symbol-function 'kai/adp-get-devs) (lambda () nil)))
+    (kai/show-shortcuts)
+    (let ((buf (get-buffer "*kais shortcuts*")))
+      (with-current-buffer buf
+        (let ((content (buffer-string)))
+          (should (string-match-p "Manson Power Supply" content))
+          (should (string-match-p "Power On" content))
+          (should (string-match-p "Power Off" content))
+          (should (string-match-p "Power Cycle" content))
+          (should (string-match-p "Status" content)))))))
+
+(ert-deftest test-kai/show-shortcuts-with-aim-tti ()
+  "Test kai/show-shortcuts function includes AIM-TTi power supply buttons when AIM-TTi devices are available."
+  (cl-letf (((symbol-function 'kai/manson-powsup-get-devs) (lambda () nil))
+            ((symbol-function 'kai/aim-tti-powsup-get-devs) (lambda () '("/dev/ttyUSB1")))
+            ((symbol-function 'kai/adp-get-devs) (lambda () nil)))
+    (kai/show-shortcuts)
+    (let ((buf (get-buffer "*kais shortcuts*")))
+      (with-current-buffer buf
+        (let ((content (buffer-string)))
+          (should (string-match-p "AIM-TTi Power Supply" content))
+          (should (string-match-p "Power On" content))
+          (should (string-match-p "Power Off" content))
+          (should (string-match-p "Power Cycle" content))
+          (should (string-match-p "Status" content)))))))

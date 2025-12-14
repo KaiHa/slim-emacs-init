@@ -2,6 +2,8 @@
 
 (provide 'libkai)
 (require 'cl-lib)
+(require 'hi-lock)
+(require 'pulse)
 
 (defgroup kai/serial nil "Additional serial settings.")
 
@@ -339,6 +341,25 @@ serial-connection wich has the QNX shell open."
      (sort (directory-files "/dev" t "tty\\(USB\\|ACM\\)[0-9]+") :lessp 'string-version-lessp))))
 
 
+(defun kai/kall (beg func args)
+  (let ((pulse-delay 0.1)
+        (pulse-iterations 15))
+    (condition-case err
+        (apply func args)
+      (t (pulse-momentary-highlight-one-line beg 'hi-pink)
+         err)
+      (:success (pulse-momentary-highlight-one-line beg 'hi-green)
+                'ok))))
+
+(defun kai/insert-button (label func &rest args)
+  (insert (format
+           " [[elisp:(kai/kall %d #'%S '%S))][%s]] "
+           (point)
+           func
+           args
+           label)))
+
+
 (defun kai/show-shortcuts ()
   "Open a buffer with buttons for all applicable power-supply functions."
   (interactive)
@@ -352,29 +373,42 @@ serial-connection wich has the QNX shell open."
       (when-let ((adp-devs (kai/adp-get-devs)))
         (dolist (tty adp-devs)
           (insert (format "* Qualcomm ADP at %s\n\n" (file-name-base tty)))
-          (insert (format "[[elisp:(kai/adp-pwr-on \"%s\")][Power On]]  /  " tty))
-          (insert (format "[[elisp:(kai/adp-pwr-off \"%s\")][Power Off]]\n\n" tty))
-          (insert (format "[[elisp:(kai/adp-reboot \"%s\")][Reboot]]\n\n" tty))
-          (insert (format "[[elisp:(kai/adp-enter-edl \"%s\")][Enter EDL]]  /  " tty))
-          (insert (format "[[elisp:(kai/adp-exit-edl \"%s\")][Exit EDL]]\n\n" tty))))
+          (kai/insert-button "Power On" #'kai/adp-pwr-on tty)
+          (insert " / ")
+          (kai/insert-button "Power Off" #'kai/adp-pwr-off tty)
+          (insert "\n\n")
+          (kai/insert-button "Reboot" #'kai/adp-reboot tty)
+          (insert "\n\n")
+          (kai/insert-button "Enter EDL" #'kai/adp-enter-edl tty)
+          (insert " / ")
+          (kai/insert-button "Exit EDL" #'kai/adp-exit-edl tty)))
+          (insert "\n\n")
 
       ;; Manson Power Supply functions
       (when-let ((manson-devs (kai/manson-powsup-get-devs)))
         (dolist (tty manson-devs)
           (insert (format "* Manson Power Supply at %s\n\n" (file-name-base tty)))
-          (insert (format "[[elisp:(kai/manson-powsup-on \"%s\")][Power On]]  /  " tty))
-          (insert (format "[[elisp:(kai/manson-powsup-off \"%s\")][Power Off]]\n\n" tty))
-          (insert (format "[[elisp:(kai/manson-powsup-powercycle \"%s\")][Power Cycle]]\n\n" tty))
-          (insert (format "[[elisp:(kai/manson-powsup-status \"%s\")][Status]]\n\n" tty))))
+          (kai/insert-button "Power On" #'kai/manson-powsup-on tty)
+          (insert " / ")
+          (kai/insert-button "Power Off" #'kai/manson-powsup-off tty)
+          (insert "\n\n")
+          (kai/insert-button "Power Cycle" #'kai/manson-powsup-powercycle tty)
+          (insert "\n\n")
+          (kai/insert-button "Status" #'kai/manson-powsup-status tty)
+          (insert "\n\n")))
 
       ;; AIM-TTi Power Supply functions
       (when-let ((aim-devs (kai/aim-tti-powsup-get-devs)))
         (dolist (tty aim-devs)
           (insert (format "* AIM-TTi Power Supply at %s\n\n" (file-name-base tty)))
-          (insert (format "[[elisp:(kai/aim-tti-powsup-on \"%s\")][Power On]]  /  " tty))
-          (insert (format "[[elisp:(kai/aim-tti-powsup-off \"%s\")][Power Off]]\n\n" tty))
-          (insert (format "[[elisp:(kai/aim-tti-powsup-powercycle \"%s\")][Power Cycle]]\n\n" tty))
-          (insert (format "[[elisp:(kai/aim-tti-powsup-status \"%s\")][Status]]\n\n" tty))))
+          (kai/insert-button "Power On" #'kai/aim-tti-powsup-on tty)
+          (insert " / ")
+          (kai/insert-button "Power Off" #'kai/aim-tti-powsup-off tty)
+          (insert "\n\n")
+          (kai/insert-button "Power Cycle" #'kai/aim-tti-powsup-powercycle tty)
+          (insert "\n\n")
+          (kai/insert-button "Status" #'kai/aim-tti-powsup-status tty)
+          (insert "\n\n")))
 
       (setq buffer-read-only t)
       (org-mode)
