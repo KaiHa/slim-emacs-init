@@ -1,6 +1,7 @@
 ;;; -*- lexical-binding: t -*-
 
 (provide 'libkai)
+(require 'cl-lib)
 
 (defgroup kai/serial nil "Additional serial settings.")
 
